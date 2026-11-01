@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neil Talaviya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#161616;--mid:#6b6b6b;--faint:#b9b9b9;--paper:#ffffff;--wash:#efefed}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{background:var(--paper);color:var(--ink);font-family:"Patrick Hand",cursive}
+  #scroller{height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+  a{color:inherit}
+  svg.defs{position:absolute;width:0;height:0}
+  .wobble{filter:url(#wobble)}
+  .ink *{stroke:var(--ink);stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .ink .light{stroke:var(--faint)}
+  .ink .solid{fill:var(--ink);stroke:none}
+
+  section{position:relative}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+  .hand{font-family:Caveat}
+  
+  /* ---------- section headings ---------- */
+  .sec-head{display:flex;align-items:flex-end;gap:18px;margin-bottom:10px}
+  .sec-head .no{font-family:Caveat;font-size:28px;color:var(--mid);padding-bottom:12px}
+  .sec-head h2{font-family:Caveat;font-weight:700;font-size:clamp(56px,8vw,96px);line-height:.95}
+  .scribble{display:block;width:min(340px,70%);height:18px;margin-bottom:22px}
+  .lede{font-size:21px;line-height:1.5;color:#3a3a3a;max-width:640px;margin-bottom:44px}
+  .todo{color:var(--mid);border-bottom:1.5px dashed var(--faint)}
+
+  /* ---------- hand-drawn cards (STEM side + off the clock) ---------- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:34px}
+  .sheet{position:relative;background:#fff;padding:30px 28px 28px}
+  .sheet .box{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+  .sheet .box rect{fill:none;stroke:var(--ink);stroke-width:2}
+  .sheet h3{font-family:Caveat;font-weight:700;font-size:36px;line-height:1;margin-bottom:12px}
+  .sheet p,.sheet li{font-size:18px;line-height:1.45;color:#333}
+  .sheet .k{font-family:Caveat;font-size:22px;color:var(--mid);margin-bottom:2px}
+  .sheet ul{list-style:none}
+  .sheet li{padding-left:22px;position:relative;margin:4px 0}
+  .sheet li::before{content:"–";position:absolute;left:4px;color:var(--mid)}
+  .lists{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .lists h4{font-family:Caveat;font-size:28px;font-weight:600;border-bottom:1.5px solid var(--ink);display:inline-block;margin-bottom:6px}
+  .stem-sec{padding:110px 0 40px}
+  .stem-sec:first-child{border-top:1.5px dashed var(--faint)}
+
+  /* ================= HOME: neutral frame, then one side ================= */
+  #home{position:relative;height:100vh;height:100dvh;min-height:560px;overflow:hidden}
+  .side{display:none}
+  body.on-creative .side[data-for="creative"],body.on-stem .side[data-for="stem"]{display:block}
+  body.on-none footer{display:none}
+  body.on-none #scroller{overflow:hidden}
+
+  /* the name glides between the middle, the left and the right */
+  .name{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;text-align:center;text-decoration:none;color:inherit;z-index:3;
+    transition:left .55s cubic-bezier(.6,0,.2,1),transform .55s cubic-bezier(.6,0,.2,1)}
+  body.on-creative .name{left:7%;transform:translate(0,-50%);text-align:left}
+  body.on-stem .name{left:93%;transform:translate(-100%,-50%);text-align:right}
+  .name .hi{font-family:Caveat;font-size:30px;color:var(--mid);display:block;margin-bottom:-8px}
+  .name h1{font-family:Caveat;font-weight:700;font-size:clamp(58px,9.5vw,124px);line-height:1}
+  .under{display:block;margin:-6px auto 0;width:92%;height:22px;overflow:visible}
+  body.on-creative .under{margin-left:0}
+  body.on-stem .under{margin-right:0;transform:scaleX(-1)}
+  .under path{stroke:var(--ink);stroke-width:3;fill:none;stroke-linecap:round}
+  .role{display:none;font-family:Caveat;font-size:26px;color:var(--mid);margin-top:4px}
+  body.on-none .r-none,body.on-creative .r-creative,body.on-stem .r-stem{display:block}
+
+  /* icon groups: columns at the edges when neutral, a row under the name once a side is picked */
+  .group{position:absolute;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;transition:opacity .25s}
+  .group .gh{font-family:Caveat;font-size:24px;color:var(--mid);text-decoration:none;border-bottom:1.5px dashed var(--faint);margin-bottom:6px}
+  .group .gh:hover{color:var(--ink);border-bottom-color:var(--ink)}
+  .group .icons{display:flex;flex-direction:column;gap:14px;align-items:center}
+  body.on-none .g-creative{left:clamp(16px,5vw,70px);top:50%;transform:translateY(-50%)}
+  body.on-none .g-stem{right:clamp(16px,5vw,70px);top:50%;transform:translateY(-50%)}
+  body.on-none .item .ic{width:clamp(66px,7.5vw,96px);height:clamp(66px,7.5vw,96px)}
+  /* neutral frame: the end icons of each column bend gently toward the name, framing it like ( name ) */
+  body.on-none .g-creative .i1,body.on-none .g-creative .i3{--dx:clamp(25px,3vw,45px)}
+  body.on-none .g-stem .i1,body.on-none .g-stem .i3{--dx:calc(-1 * clamp(25px,3vw,45px))}
+  body.on-creative .g-stem,body.on-stem .g-creative{opacity:0;pointer-events:none;visibility:hidden}
+  body.on-creative .g-creative{left:7%;top:calc(44% + 150px)}
+  body.on-stem .g-stem{right:7%;top:calc(44% + 150px)}
+  body.on-creative .group .gh,body.on-stem .group .gh{display:none}
+  body.on-creative .group .icons,body.on-stem .group .icons{flex-direction:row;gap:clamp(26px,4.5vw,64px);align-items:flex-start}
+  body.swapping .group{opacity:0}
+
+  .item{display:flex;flex-direction:column;align-items:center;text-decoration:none;transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--r,0deg))}
+  .item:focus-visible{outline:2px dashed var(--ink);outline-offset:6px}
+  .item .ic{width:clamp(72px,8.5vw,104px);height:clamp(72px,8.5vw,104px)}
+  .item span{font-family:Caveat;font-weight:600;font-size:clamp(22px,2.4vw,30px);white-space:nowrap;position:relative}
+  .item span::after{content:"";position:absolute;left:0;right:0;bottom:2px;height:2px;background:var(--ink);opacity:0}
+  .item:hover span::after{opacity:1}
+  .i1{--r:-3deg}.i2{--r:2deg}.i3{--r:-2deg}
+
+
+  /* ---------- reading list: a torn-paper note that drops from the top (neutral start only) ---------- */
+  .shelf-tab{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:row;align-items:flex-end;gap:2px;
+    background:none;border:none;cursor:pointer;color:var(--ink);font-family:Caveat;font-size:23px;line-height:1}
+  .shelf-tab svg{width:34px;height:31px;margin-bottom:6px}
+  .shelf-tab span{color:var(--mid)}
+  .shelf-tab:hover span{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  body:not(.on-none) .shelf-tab{display:none}
+  body.shelf-open .shelf-tab{visibility:hidden}
+  .shelf-scrim{position:fixed;inset:0;z-index:40;display:none}
+  body.shelf-open .shelf-scrim{display:block}
+  .shelf{position:fixed;top:0;left:50%;width:min(760px,94vw);z-index:41;transform:translate(-50%,-110%);transition:transform .35s cubic-bezier(.6,0,.2,1);
+    filter:drop-shadow(0 6px 14px rgba(0,0,0,.12))}
+  body.shelf-open .shelf{transform:translate(-50%,0)}
+  .shelf .paper{background:#fff;padding:34px 34px 46px;clip-path:polygon(0% 0%,100% 0%,100% calc(100% - 10px),97.8% calc(100% - 2px),95.0% calc(100% - 1px),92.5% calc(100% - 4px),90.8% calc(100% - 6px),89.1% calc(100% - 5px),87.4% calc(100% - 1px),85.0% calc(100% - 10px),83.2% calc(100% - 3px),80.5% calc(100% - 11px),77.8% calc(100% - 5px),74.5% calc(100% - 1px),71.3% calc(100% - 3px),69.5% calc(100% - 1px),67.3% calc(100% - 10px),65.4% calc(100% - 7px),62.6% calc(100% - 4px),60.0% calc(100% - 1px),58.3% calc(100% - 2px),55.5% calc(100% - 5px),53.4% calc(100% - 7px),50.9% calc(100% - 4px),47.9% calc(100% - 8px),45.9% calc(100% - 7px),43.3% calc(100% - 11px),40.4% calc(100% - 3px),37.0% calc(100% - 1px),34.7% calc(100% - 9px),32.8% calc(100% - 6px),31.1% calc(100% - 8px),28.2% calc(100% - 7px),25.0% calc(100% - 4px),22.1% calc(100% - 7px),19.5% calc(100% - 5px),16.4% calc(100% - 11px),13.9% calc(100% - 8px),12.2% calc(100% - 8px),9.5% calc(100% - 12px),6.4% calc(100% - 3px),4.1% calc(100% - 8px),2.4% calc(100% - 6px),0.5% calc(100% - 1px),0.0% calc(100% - 9px))}
+  .shelf h3{font-family:Caveat;font-weight:700;font-size:40px;line-height:1}
+  .shelf .now{font-family:Caveat;font-size:24px;margin:8px 0 18px;color:var(--ink)}
+  .shelf .now b{font-weight:700}
+  .shelf .now em{font-style:normal;color:var(--mid)}
+  .shelf .cols{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:26px}
+  .shelf h4{font-family:Caveat;font-size:27px;font-weight:600;border-bottom:1.5px solid var(--ink);display:inline-block;margin-bottom:6px}
+  .shelf ul{list-style:none}
+  .shelf li{font-size:17px;line-height:1.35;margin:7px 0;padding-left:18px;position:relative;color:#333}
+  .shelf li::before{content:"–";position:absolute;left:2px;color:var(--mid)}
+  .shelf li small{display:block;font-family:Caveat;font-size:19px;color:var(--mid)}
+  .shelf .close{position:absolute;top:16px;right:22px;z-index:3;background:none;border:none;cursor:pointer;font-family:Caveat;font-size:24px;color:var(--mid)}
+  .shelf .close:hover{color:var(--ink)}
+  @media (max-width:760px){
+    .shelf{width:100vw}
+    .shelf .paper{padding:30px 22px 44px;max-height:86vh;overflow:auto}
+    .shelf .cols{grid-template-columns:1fr;gap:12px}
+    .shelf-tab{top:6px;font-size:20px}
+    .shelf-tab svg{width:28px;height:26px}
+  }
+
+
+  /* one-line intro under the name; "lens" and "lab" are the doors to each side */
+  .intro{position:absolute;left:50%;top:calc(44% + 104px);transform:translateX(-50%);z-index:3;width:min(620px,90vw);text-align:center;
+    font-family:Caveat;font-size:clamp(25px,2.5vw,32px);color:var(--mid);line-height:1.25}
+  .intro a{color:var(--ink);font-weight:700;text-decoration:none;padding-bottom:5px;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3 Q5 0.5 10 3 T20 3 T30 3 T40 3' fill='none' stroke='%23161616' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") left bottom/20px 4px repeat-x}
+  .intro a:hover{background-size:24px 6px}
+  body:not(.on-none) .intro{display:none}
+  .group .gh{display:none}
+
+  /* creative ⇄ stem switch, top-right once a side is picked */
+  .switch{position:absolute;top:24px;right:clamp(18px,4vw,48px);z-index:4;display:flex;gap:8px;align-items:center;font-family:Caveat;font-size:26px;color:var(--mid)}
+  .switch a{text-decoration:none;color:var(--mid)}
+  .switch a:hover{color:var(--ink)}
+  body.on-creative .switch [data-side="creative"],body.on-stem .switch [data-side="stem"]{color:var(--ink);font-weight:700;border-bottom:2px solid var(--ink)}
+  body.on-none .switch{display:none}
+
+  /* contact links, bottom-centre */
+  .social{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:2}
+  .social .row{display:flex;gap:24px;align-items:flex-start}
+  .social a{display:flex;flex-direction:column;align-items:center;text-decoration:none;font-family:Caveat;font-size:20px;color:var(--ink)}
+  .social svg,.social .logo{width:40px;height:40px}
+  .social .logo{object-fit:contain}
+  .social .logo + svg{display:none}  /* if an official logo file is present, it replaces the doodle */
+  .social a:hover{opacity:.6}
+  .social a:hover span{text-decoration:underline;text-underline-offset:3px}
+  .social{position:absolute}
+  .social .toast{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;border:1.5px solid var(--ink);
+    border-radius:999px;padding:3px 14px;font-family:Caveat;font-size:20px;color:var(--ink);opacity:0;pointer-events:none;transition:opacity .2s}
+  .social .toast.show{opacity:1;pointer-events:auto;user-select:all}
+
+
+  /* ================= PORTFOLIO ================= */
+  #portfolio{padding:120px 0 60px;border-top:1.5px dashed var(--faint)}
+  footer{border-top:1.5px dashed var(--faint)}
+
+  /* ---------- carousel (shared) ---------- */
+  .carousel{position:relative}
+  .track{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;padding-bottom:4px}
+  .track::-webkit-scrollbar{display:none}
+  .slide{flex:0 0 calc((100% - 40px)/3);scroll-snap-align:start;margin:0}
+  .slide .img,.slide img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;border:1.5px solid var(--ink)}
+  .slide .img{background:repeating-linear-gradient(45deg,var(--wash) 0 10px,#e6e6e3 10px 20px);display:grid;place-items:center;font-family:Caveat;font-size:22px;color:var(--mid)}
+  .slide figcaption{font-family:Caveat;font-size:22px;margin-top:8px}
+  .carousel.wide .slide{flex-basis:calc((100% - 40px)/3)}
+  .carousel.wide .slide .img,.carousel.wide .slide img{aspect-ratio:3/2;height:auto}
+  .ctrl{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-family:Caveat;font-size:24px}
+  .ctrl button{font-family:Caveat;font-size:26px;background:none;border:1.5px solid var(--ink);border-radius:999px;padding:2px 18px;cursor:pointer;color:var(--ink)}
+  .ctrl button:disabled{opacity:.3;cursor:default}
+  .ctrl .count{color:var(--mid)}
+  .viewport{position:relative}
+  .viewport .arrow{width:8%;max-width:70px}
+  .ctrl .btns{display:flex;gap:10px}
+
+
+  /* ---------- portfolio grid (instagram-style) ---------- */
+  .ig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .tile{position:relative;aspect-ratio:4/5;overflow:hidden;cursor:zoom-in;background:var(--wash) center/cover no-repeat;border:1.5px solid var(--ink)}
+  .tile img,.tile .ph,.lb-img img,.lb-img .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .ph{display:grid;place-items:center;text-align:center;padding:12px;background:repeating-linear-gradient(45deg,var(--wash) 0 10px,#e6e6e3 10px 20px);font-family:Caveat;font-size:22px;color:var(--mid)}
+  .tile .ph{font-size:0}
+  .tile .label{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 10px;background:linear-gradient(transparent,rgba(0,0,0,.55));color:#fff;font-family:Caveat;font-size:24px;line-height:1;pointer-events:none}
+  .tile .stack{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:1.5px solid var(--ink);border-radius:999px;padding:0 9px;font-family:Caveat;font-size:18px;pointer-events:none}
+  /* tall chevron arrows; the clickable zone only shows on hover */
+  .arrow{position:absolute;top:0;bottom:0;width:22%;max-width:90px;border:none;background:transparent;cursor:pointer;
+    display:flex;align-items:center;padding:0 7px;color:#8a8a8a;border-radius:0}
+  .arrow svg{width:14px;height:46px;overflow:visible}
+  .arrow svg path{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+  .arrow:hover,.arrow:focus-visible{background:rgba(255,255,255,.22);outline:none}
+  .arrow.l{left:0;justify-content:flex-start}.arrow.r{right:0;justify-content:flex-end}
+  .arrow[hidden]{display:none}
+
+  /* ---------- zoomed view ---------- */
+  .lb{position:fixed;inset:0;z-index:50;background:var(--paper);display:none;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);padding:20px 28px}
+  .lb.open{display:grid}
+  .lb-top,.lb-bot{display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:Caveat}
+  .lb-top h3{font-family:Caveat;font-weight:700;font-size:40px;line-height:1}
+  .lb-top .sub{font-size:22px;color:var(--mid)}
+  .lb button.txt{white-space:nowrap;font-family:Caveat;font-size:24px;background:none;border:1.5px solid var(--ink);border-radius:999px;padding:2px 18px;cursor:pointer;color:var(--ink)}
+  .lb-stage{position:relative;display:grid;place-items:center;min-height:0;padding:18px 0}
+  .lb-img{position:relative;background:#fff center/contain no-repeat;width:min(100%,calc(72vh*.8));aspect-ratio:4/5;border:1.5px solid var(--ink);background:var(--wash)}
+  .lb-img img{object-fit:contain;background:#fff}
+  .lb .arrow{width:12%;max-width:140px;padding:0 14px}
+  .lb .arrow svg{width:20px;height:64px}
+  .lb .arrow:hover,.lb .arrow:focus-visible{background:rgba(0,0,0,.05)}
+  .lb-thumbs{display:flex;gap:6px;overflow-x:auto;max-width:60%}
+  .lb-thumbs button{position:relative;flex:0 0 52px;height:52px;border:1.5px solid var(--faint);background:var(--wash);cursor:pointer;padding:0;overflow:hidden}
+  .lb-thumbs button.on{border-color:var(--ink);border-width:2.5px}
+  .lb-thumbs img{width:100%;height:100%;object-fit:cover}
+  .lb-thumbs span{font-family:Caveat;font-size:18px;color:var(--mid)}
+
+  /* ================= EVENTS ================= */
+  #events{padding:110px 0 60px}
+  .event{padding:34px 0 40px;border-top:1.5px solid var(--ink)}
+  .event:last-child{border-bottom:1.5px solid var(--ink)}
+  .event .head{display:flex;align-items:baseline;gap:22px;flex-wrap:wrap;margin-bottom:20px}
+  .event .date{font-family:Caveat;font-size:26px;color:var(--mid)}
+  .event h3{font-family:Caveat;font-weight:700;font-size:40px;line-height:1}
+  .event p{font-size:18px;color:#3a3a3a;flex-basis:100%;max-width:760px;margin-top:-10px}
+
+  /* ================= FILMS ================= */
+  #films{padding:110px 0 140px}
+  .films{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:40px 26px}
+  .film{margin:0}
+  .film video{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;background:#111;border:1.5px solid var(--ink)}
+  .film h3{font-family:Caveat;font-weight:700;font-size:32px;margin-top:10px;line-height:1}
+  .film p{font-size:17px;color:var(--mid)}
+
+  footer{text-align:center;padding:40px 20px 60px;font-family:Caveat;font-size:24px;color:var(--mid);border-top:1.5px dashed var(--faint)}
+  footer a{color:var(--ink)}
+
+  @media (max-width:760px){
+    .cards,.lists{grid-template-columns:1fr}
+    .slide,.carousel.wide .slide{flex-basis:80%}
+    .ig{grid-template-columns:repeat(2,1fr);gap:4px}
+    .lb{padding:14px}
+    .lb-top h3{font-size:30px}
+    .lb-thumbs{display:none}
+    .lb button.txt{font-size:19px;padding:2px 10px}
+    .lb-top .sub{font-size:18px}
+    .lb-img{width:100%}
+    .lb .arrow{width:22%;padding:0 6px}
+    .name h1{font-size:54px}
+    .name{top:46%}
+    body.on-creative .name{left:20px}
+    body.on-stem .name{left:calc(100% - 20px)}
+    /* neutral on phones: creative icons above the name, stem icons below */
+    body.on-none .g-creative{left:50%;top:7%;transform:translateX(-50%)}
+    body.on-none .g-stem{right:auto;left:50%;top:auto;bottom:118px;transform:translateX(-50%)}
+    body.on-none .group .icons{flex-direction:row;gap:22px}
+    body.on-none .item .ic{width:64px;height:64px}
+    /* phones: the rows bend toward the name instead */
+    body.on-none .g-creative .i1,body.on-none .g-creative .i3{--dx:0;--dy:12px}
+    body.on-none .g-stem .i1,body.on-none .g-stem .i3{--dx:0;--dy:-12px}
+    body.on-creative .g-creative{left:20px;top:calc(46% + 120px)}
+    body.on-stem .g-stem{right:20px;top:calc(46% + 120px)}
+    body.on-creative .group .icons,body.on-stem .group .icons{gap:20px}
+    .item span{font-size:21px}
+    .switch{top:14px;right:14px;font-size:22px}
+    .intro{top:calc(46% + 76px);font-size:24px}
+    .intro .nb{display:block}
+  }
+
+  @media (prefers-reduced-motion:reduce){#scroller{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<svg class="defs" aria-hidden="true"><filter id="wobble"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="3"/></filter></svg>
+
+<!-- doodle icon library -->
+<svg class="defs" aria-hidden="true">
+  <symbol id="ic-left" viewBox="0 0 60 24"><path d="M57 14 C42 9 24 15 5 12 M14 4 L4 12 L14 20"/></symbol>
+  <symbol id="ic-right" viewBox="0 0 60 24"><path d="M3 14 C18 9 36 15 55 12 M46 4 L56 12 L46 20"/></symbol>
+  <symbol id="ic-curve" viewBox="0 0 40 36"><path d="M3 30 C16 32 28 26 31 6 M24 12 L31 4 L37 13"/></symbol>
+  <symbol id="ic-up" viewBox="0 0 34 74"><path d="M17 70 C15 52 19 30 17 6 M5 20 L17 5 L29 20"/></symbol>
+  <symbol id="ic-in" viewBox="0 0 40 40"><circle cx="9" cy="9" r="2.6"/><path d="M9 17 V34 M17 34 V17 M17 25 Q17 17 24.5 17 Q32 17 32 25 V34"/></symbol>
+  <symbol id="ic-cam" viewBox="0 0 40 40"><path d="M4 14 q0-2 2-2 h28 q2 0 2 2 v17 q0 2-2 2 H6 q-2 0-2-2z M7 12 v-3 h9 v3 M28 12 v-2 h5 v2 M4 18 h10 M28 18 h8"/><circle cx="21" cy="22.5" r="7"/><circle cx="21" cy="22.5" r="3.6"/><rect x="29.5" y="14" width="4" height="2.6" rx=".6"/></symbol>
+  <symbol id="ic-mail" viewBox="0 0 40 40"><path d="M5 10 h30 q2 0 2 2 v17 q0 2-2 2 H5 q-2 0-2-2 V12 q0-2 2-2z M4 12 l16 11 16-11"/></symbol>
+  <symbol id="ic-work" viewBox="0 0 40 40"><path d="M5 14 h30 q2 0 2 2 v15 q0 2-2 2 H5 q-2 0-2-2 V16 q0-2 2-2z M14 14 v-4 q0-2 2-2 h8 q2 0 2 2 v4 M3 22 h34 M18 22 v3 h4 v-3"/></symbol>
+  <symbol id="ic-lens" viewBox="0 0 40 40"><circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="8"/><circle cx="20" cy="20" r="3"/><path d="M8 11 l4 3"/></symbol>
+  <symbol id="ic-research" viewBox="0 0 100 100"><path d="M22 14 h38 l14 14 v44 q0 3-3 3 H22 q-3 0-3-3 V17 q0-3 3-3z M60 14 v14 h14 M30 34 h24 M30 44 h30 M30 54 h18"/><circle cx="62" cy="66" r="13"/><path d="M71 75 l15 15"/></symbol>
+  <symbol id="ic-eng" viewBox="0 0 100 100"><path d="M44 22 l5 1 2 6 6 3 6-3 4 4-3 6 3 6 6 2 0 6-6 2-3 6 3 6-4 4-6-3-6 3-2 6h-6l-2-6-6-3-6 3-4-4 3-6-3-6-6-2v-6l6-2 3-6-3-6 4-4 6 3 6-3 2-6z"/><circle cx="44" cy="46" r="10"/><path d="M70 70 l14 14 M80 66 l-8 8 l14 14 l8-8z"/></symbol>
+  <symbol id="ic-lead" viewBox="0 0 100 100"><path d="M14 86 h74 M26 84 v-16 h12 v16 M46 84 v-28 h12 v28 M66 84 v-40 h12 v40 M18 54 q14-6 22-16 t20-12 l18-12 M66 12 h13 v13"/></symbol>
+  <symbol id="ic-photo" viewBox="0 0 100 100"><path d="M14 34 q0-6 6-6 h12 l6-9 h24 l6 9 h12 q6 0 6 6 v40 q0 6-6 6 H20 q-6 0-6-6z"/><circle cx="50" cy="54" r="15"/><circle cx="50" cy="54" r="8"/><path d="M74 38 h5 M22 20 l2 5 M18 23 l5 1"/></symbol>
+  <symbol id="ic-events" viewBox="0 0 100 100"><path d="M16 26 h68 q4 0 4 4 v12 q-8 0-8 8 t8 8 v12 q0 4-4 4 H16 q-4 0-4-4 V58 q8 0 8-8 t-8-8 V30 q0-4 4-4z"/><path d="M64 28 v6 M64 40 v6 M64 52 v6 M64 64 v6"/><path d="M26 42 h26 M26 52 h20 M26 62 h24"/></symbol>
+  <symbol id="ic-film" viewBox="0 0 100 100"><circle cx="40" cy="44" r="26"/><circle cx="40" cy="44" r="5"/><circle cx="40" cy="28" r="6"/><circle cx="40" cy="60" r="6"/><circle cx="24" cy="44" r="6"/><circle cx="56" cy="44" r="6"/><path d="M40 70 q30 4 46 18 M78 78 l10 10 -12 2"/></symbol>
+  <symbol id="ic-q" viewBox="0 0 100 100"><path d="M34 36 q0-18 18-18 t18 16 q0 10-10 15 t-8 14 v4"/><circle cx="52" cy="80" r="3" class="solid"/><path d="M16 22 l4 4 M20 22 l-4 4 M82 60 l4 4 M86 60 l-4 4"/></symbol>
+</svg>
+
+<div id="scroller">
+<!-- ================= HOME (neutral frame) ================= -->
+<section id="home">
+  <button class="shelf-tab" id="shelf-tab" aria-expanded="false" aria-controls="shelf"><span>reading list</span><svg class="ink wobble"><use href="#ic-curve"/></svg></button>
+  <nav class="switch" aria-label="switch sides"><a href="#lens" data-side="creative">lens</a><span>⇄</span><a href="#lab" data-side="stem">lab</a></nav>
+
+  <a class="name" href="#" aria-label="Neil Talaviya — back to the start" title="back to the start">
+    <span class="hi">hi, i'm</span>
+    <h1>Neil Talaviya</h1>
+    <svg class="under wobble" viewBox="0 0 400 22" preserveAspectRatio="none"><path d="M3 9 C70 15 150 6 230 11 S350 13 396 6 M3 16 C90 19 190 12 300 16"/></svg>
+    <span class="role r-creative">photographer &amp; filmmaker</span>
+    <span class="role r-stem">engineer &amp; researcher</span>
+  </a>
+
+  <p class="intro">pick a side: the <a href="#lens" data-side="creative">lens</a> or the <a href="#lab" data-side="stem">lab</a>. <span class="nb">i&nbsp;can't.</span></p>
+
+  <nav class="group g-creative" aria-label="lens">
+    <a class="gh" href="#lens" data-side="creative">lens</a>
+    <div class="icons">
+      <a class="item i1" href="#portfolio"><svg class="ic ink wobble"><use href="#ic-photo"/></svg><span>portfolio</span></a>
+      <a class="item i2" href="#events"><svg class="ic ink wobble"><use href="#ic-events"/></svg><span>events</span></a>
+      <a class="item i3" href="#films"><svg class="ic ink wobble"><use href="#ic-film"/></svg><span>films</span></a>
+    </div>
+  </nav>
+
+  <nav class="group g-stem" aria-label="lab">
+    <a class="gh" href="#lab" data-side="stem">lab</a>
+    <div class="icons">
+      <a class="item i1" href="#research"><svg class="ic ink wobble"><use href="#ic-research"/></svg><span>research</span></a>
+      <a class="item i2" href="#engineering"><svg class="ic ink wobble"><use href="#ic-eng"/></svg><span>engineering</span></a>
+      <a class="item i3" href="#leadership"><svg class="ic ink wobble"><use href="#ic-lead"/></svg><span>leadership</span></a>
+    </div>
+  </nav>
+
+  <div class="social">
+    <div class="row">
+      <a href="https://www.linkedin.com/in/neil-talaviya-59b936329/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn">
+        <img class="logo" src="icons/linkedin.png" alt="" onerror="this.remove()"><svg class="ink wobble"><use href="#ic-in"/></svg></a>
+      <a href="https://www.instagram.com/neil.cr2/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
+        <img class="logo" src="icons/instagram.png" alt="" onerror="this.remove()"><svg class="ink wobble"><use href="#ic-cam"/></svg></a>
+      <a href="mailto:neil.talaviya@gmail.com" id="mail-link" aria-label="Copy email address neil.talaviya@gmail.com" title="neil.talaviya@gmail.com — click to copy"><svg class="ink wobble"><use href="#ic-mail"/></svg></a>
+    </div>
+    <span class="toast" id="mail-toast" role="status" aria-live="polite"></span>
+  </div>
+</section>
+<div class="shelf-scrim" id="shelf-scrim"></div>
+<aside class="shelf" id="shelf" aria-label="reading list" aria-hidden="true">
+  
+  <button class="close" id="shelf-close" aria-label="close reading list">close ✕</button>
+  <div class="paper">
+    <h3>reading list</h3>
+    <p class="now"><b>currently reading:</b> <em>The Lord of the Rings — J. R. R. Tolkien</em></p>
+    <div class="cols">
+      <div><h4>reading</h4><ul>
+        <li>Their Eyes Were Watching God<small>Zora Neale Hurston</small></li>
+        <li>Wayward Lives, Beautiful Experiments<small>Saidiya Hartman</small></li>
+        <li>The Hobbit<small>J. R. R. Tolkien</small></li>
+      </ul></div>
+      <div><h4>music</h4><ul>
+        <li>Mama Said<small>MC4D, Kenley</small></li>
+        <li>Chogada<small>Asees Kaur, Darshan Raval</small></li>
+        <li>Somewhere in Stockholm<small>Avicii</small></li>
+      </ul></div>
+      <div><h4>film</h4><ul>
+        <li>Wildwood<small>Travis Knight</small></li>
+        <li>The Prince of Egypt<small>Brenda Chapman</small></li>
+        <li>You Can See Everything<small>Nathan Fielder, Lance Oppenheim</small></li>
+      </ul></div>
+    </div>
+  </div>
+</aside>
+
+
+<div class="side" data-for="creative">
+<!-- ================= PORTFOLIO ================= -->
+<section id="portfolio">
+  <div class="wrap">
+    <div class="sec-head"><h2>portfolio</h2></div>
+    <svg class="scribble ink wobble" viewBox="0 0 340 18"><path d="M4 12 C70 2 150 16 220 8 S320 6 336 10"/></svg>
+    <p class="lede">Images shot on Canon Rebel t6 (miraculously). Capturing anything possible.</p>
+
+    <div class="ig" id="ig"></div>
+  </div>
+</section>
+
+<!-- zoomed collection view -->
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="collection">
+  <div class="lb-top"><div><h3 id="lb-title"></h3><div class="sub" id="lb-sub"></div></div><button class="txt" id="lb-close">close ✕</button></div>
+  <div class="lb-stage">
+    <div class="lb-img" id="lb-img"></div>
+    <button class="arrow l" id="lb-prev" aria-label="previous photo"><svg viewBox="0 0 16 46"><path d="M14 2 L2 23 L14 44"/></svg></button>
+    <button class="arrow r" id="lb-next" aria-label="next photo"><svg viewBox="0 0 16 46"><path d="M2 2 L14 23 L2 44"/></svg></button>
+  </div>
+  <div class="lb-bot">
+    <button class="txt" id="lb-pc">← previous collection</button>
+    <div class="lb-thumbs" id="lb-thumbs"></div>
+    <button class="txt" id="lb-nc">next collection →</button>
+  </div>
+</div>
+
+<!-- ================= EVENTS ================= -->
+<section id="events">
+  <div class="wrap">
+    <div class="sec-head"><h2>events</h2></div>
+    <svg class="scribble ink wobble" viewBox="0 0 340 18"><path d="M4 12 C70 2 150 16 220 8 S320 6 336 10"/></svg>
+    <p class="lede">Events I've been invited to photograph.</p>
+
+    <div class="event">
+      <div class="head"><h3>ftc scrimmage</h3><span class="date">10 · 2026</span><p>Invited as event photographer for an eight-team “Robot in 5 Weeks” scrimmage.</p></div>
+      <div class="carousel wide">
+        <div class="viewport">
+        <div class="track">
+          <figure class="slide"><img src="events/ftc-scrimmage-1.jpg" alt="ftc scrimmage, photo 1" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/ftc-scrimmage-2.jpg" alt="ftc scrimmage, photo 2" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/ftc-scrimmage-3.jpg" alt="ftc scrimmage, photo 3" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/ftc-scrimmage-4.jpg" alt="ftc scrimmage, photo 4" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/ftc-scrimmage-5.jpg" alt="ftc scrimmage, photo 5" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/ftc-scrimmage-6.jpg" alt="ftc scrimmage, photo 6" width="1000" height="667" loading="lazy" decoding="async"></figure>
+        </div>
+        <button class="arrow l prev" aria-label="previous photos"><svg viewBox="0 0 16 46"><path d="M14 2 L2 23 L14 44"/></svg></button><button class="arrow r next" aria-label="next photos"><svg viewBox="0 0 16 46"><path d="M2 2 L14 23 L2 44"/></svg></button>
+        </div>
+        <div class="ctrl"><span class="count"></span></div>
+      </div>
+    </div>
+    <div class="event">
+      <div class="head"><h3>alumni weekend</h3><span class="date">10 · 2026</span><p>Hired as event photographer for NCSSM’s annual Alumni Weekend, hosting 800+ alumni and guests from classes as far back as 1986.</p></div>
+      <div class="carousel wide">
+        <div class="viewport">
+        <div class="track">
+          <figure class="slide"><img src="events/alumni-weekend-1.jpg" alt="alumni weekend, photo 1" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/alumni-weekend-2.jpg" alt="alumni weekend, photo 2" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/alumni-weekend-3.jpg" alt="alumni weekend, photo 3" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/alumni-weekend-4.jpg" alt="alumni weekend, photo 4" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/alumni-weekend-5.jpg" alt="alumni weekend, photo 5" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/alumni-weekend-6.jpg" alt="alumni weekend, photo 6" width="1000" height="667" loading="lazy" decoding="async"></figure>
+        </div>
+        <button class="arrow l prev" aria-label="previous photos"><svg viewBox="0 0 16 46"><path d="M14 2 L2 23 L14 44"/></svg></button><button class="arrow r next" aria-label="next photos"><svg viewBox="0 0 16 46"><path d="M2 2 L14 23 L2 44"/></svg></button>
+        </div>
+        <div class="ctrl"><span class="count"></span></div>
+      </div>
+    </div>
+    <div class="event">
+      <div class="head"><h3>frc district competition</h3><span class="date">02 · 2026</span><p>Team 900’s photographer for FIRST NC’s first district competition.</p></div>
+      <div class="carousel wide">
+        <div class="viewport">
+        <div class="track">
+          <figure class="slide"><img src="events/frc-district-1.jpg" alt="frc district competition, photo 1" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/frc-district-2.jpg" alt="frc district competition, photo 2" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/frc-district-3.jpg" alt="frc district competition, photo 3" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/frc-district-4.jpg" alt="frc district competition, photo 4" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/frc-district-5.jpg" alt="frc district competition, photo 5" width="1000" height="667" loading="lazy" decoding="async"></figure>
+          <figure class="slide"><img src="events/frc-district-6.jpg" alt="frc district competition, photo 6" width="1000" height="667" loading="lazy" decoding="async"></figure>
+        </div>
+        <button class="arrow l prev" aria-label="previous photos"><svg viewBox="0 0 16 46"><path d="M14 2 L2 23 L14 44"/></svg></button><button class="arrow r next" aria-label="next photos"><svg viewBox="0 0 16 46"><path d="M2 2 L14 23 L2 44"/></svg></button>
+        </div>
+        <div class="ctrl"><span class="count"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FILMS ================= -->
+<section id="films">
+  <div class="wrap">
+    <div class="sec-head"><h2>films</h2></div>
+    <svg class="scribble ink wobble" viewBox="0 0 340 18"><path d="M4 12 C70 2 150 16 220 8 S320 6 336 10"/></svg>
+    <p class="lede">Short films documenting my senior year of high school away from home.</p>
+
+    <div class="films">
+      <figure class="film"><video src="films/first-last-day.mp4" poster="films/first-last-day.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>first last day</h3><p>0:29</p></figcaption></figure>
+      <figure class="film"><video src="films/canoes-in-banff.mp4" poster="films/canoes-in-banff.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>canoes in banff</h3><p>0:14</p></figcaption></figure>
+      <figure class="film"><video src="films/brand-new-day.mp4" poster="films/brand-new-day.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>brand new day</h3><p>0:29</p></figcaption></figure>
+      <figure class="film"><video src="films/co27-signing-in.mp4" poster="films/co27-signing-in.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>co27 signing in</h3><p>2:44</p></figcaption></figure>
+      <figure class="film"><video src="films/senior-sunrise.mp4" poster="films/senior-sunrise.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>senior sunrise</h3><p>0:26</p></figcaption></figure>
+      <figure class="film"><video src="films/sacc-block-party.mp4" poster="films/sacc-block-party.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>sacc block party</h3><p>0:29</p></figcaption></figure>
+      <figure class="film"><video src="films/unis-on-top.mp4" poster="films/unis-on-top.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>unis on top</h3><p>0:32</p></figcaption></figure>
+      <figure class="film"><video src="films/last-day-as-a-kid.mp4" poster="films/last-day-as-a-kid.jpg" controls preload="none" playsinline width="1440" height="1080"></video><figcaption><h3>last day as a kid</h3><p>0:15</p></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="side" data-for="stem">
+<section id="research" class="stem-sec">
+  <div class="wrap">
+    <div class="sec-head"><h2>research</h2></div>
+    <svg class="scribble ink wobble" viewBox="0 0 340 18"><path d="M4 12 C70 2 150 16 220 8 S320 6 336 10"/></svg>
+    <p class="lede"><span class="todo">a line about what draws you to research</span></p>
+    <div class="cards">
+      <div class="sheet"><svg class="box wobble" preserveAspectRatio="none"><rect x="1" y="1" width="99.4%" height="99.4%" rx="6"/></svg>
+        <div class="k">humanities research</div><h3>Hamlet, NC &amp; the Amazon data center</h3><p>How a place’s history shapes the construction of a data center, and how that construction reshapes the place in turn.</p></div>
+      <div class="sheet"><svg class="box wobble" preserveAspectRatio="none"><rect x="1" y="1" width="99.4%" height="99.4%" rx="6"/></svg>
+        <div class="k">game theory · with Dr. Vaidya, Duke Fuqua</div><h3>intercity competition</h3><p>Modeling how intercity competition affects where data centers get built.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="engineering" class="stem-sec">
+  <div class="wrap">
+    <div class="sec-head"><h2>engineering</h2></div>
+    <svg class="scribble ink wobble" viewBox="0 0 340 18"><path d="M4 12 C70 2 150 16 220 8 S320 6 336 10"/></svg>
+    <p class="lede"><span class="todo">a line about the engineering you do</span></p>
+    <div class="cards">
+      <div class="sheet"><svg class="box wobble" preserveAspectRatio="none"><rect x="1" y="1" width="99.4%" height="99.4%" rx="6"/></svg>
+        <div class="k">CFD research</div><h3>McGuire Nuclear Station × Lake Norman</h3><p>A computational fluid dynamics model of McGuire Nuclear Station’s surface cooling-water discharge into Lake Norman and its effect on aquatic life. Finding: underwater discharge is better for the lake’s aquatic life.</p></div>
+      <div class="sheet"><svg class="box wobble" preserveAspectRatio="none"><rect x="1" y="1" width="99.4%" height="99.4%" rx="6"/></svg>
+        <div class="k">robotics team</div><h3>robotics</h3><p><span class="todo">your role, the robot, a competition result</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section id="leadership" class="stem-sec">
+  <div class="wrap">
+    <div class="sec-head"><h2>leadership</h2></div>
+    <svg class="scribble ink wobble" viewBox="0 0 340 18"><path d="M4 12 C70 2 150 16 220 8 S320 6 336 10"/></svg>
+    <p class="lede"><span class="todo">a line about leadership and business</span></p>
+    <div class="cards">
+      <div class="sheet"><svg class="box wobble" preserveAspectRatio="none"><rect x="1" y="1" width="99.4%" height="99.4%" rx="6"/></svg>
+        <div class="k">DECA</div><h3>impact without a title</h3><p>Ran for state office twice and lost both times. I kept working anyway, building up my chapter and contributing across the state without the title.</p></div>
+      <div class="sheet"><svg class="box wobble" preserveAspectRatio="none"><rect x="1" y="1" width="99.4%" height="99.4%" rx="6"/></svg>
+        <div class="k">FBLA</div><h3>FBLA</h3><p><span class="todo">events, roles, results</span></p></div>
+      <div class="sheet"><svg class="box wobble" preserveAspectRatio="none"><rect x="1" y="1" width="99.4%" height="99.4%" rx="6"/></svg>
+        <div class="k">TSA</div><h3>TSA</h3><p><span class="todo">events, roles, results</span></p></div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer>made by hand (kinda) · lake norman, nc ⇄ durham, nc · <a href="#home" class="totop">back to the top</a></footer>
+</div>
+
+<script>
+  // ---------- sides: neutral frame → creative or stem ----------
+  const scroller=document.getElementById('scroller'), home=document.getElementById('home');
+  const SECTION_SIDE={portfolio:'creative',events:'creative',films:'creative',research:'stem',engineering:'stem',leadership:'stem'};
+  let side='none';
+  function setSide(next){
+    if(next===side) return;
+    document.body.classList.remove('shelf-open');
+    const fromNone=side==='none';
+    document.body.classList.add('swapping');
+    document.body.classList.remove('on-'+side); side=next; document.body.classList.add('on-'+side);
+    setTimeout(()=>document.body.classList.remove('swapping'), fromNone||next==='none'?260:320);
+  }
+  function scrollToEl(el,instant){
+    scroller.style.scrollBehavior=instant?'auto':'';
+    scroller.scrollTo({top:el?el.offsetTop:0, behavior:instant?'auto':'smooth'});
+    if(instant) scroller.style.scrollBehavior='';
+  }
+  function route(instant){
+    const id=decodeURIComponent(location.hash.slice(1));
+    if(id==='home') return;                          // "back to the top" keeps the current side
+    const ALIAS={lens:'creative',lab:'stem',creative:'creative',stem:'stem'};
+    if(ALIAS[id]){ const to=ALIAS[id], was=side; setSide(to); if(was!==to) scrollToEl(null,true); return; }
+    if(SECTION_SIDE[id]){
+      const changing=side!==SECTION_SIDE[id];
+      setSide(SECTION_SIDE[id]);
+      const el=document.getElementById(id);
+      // let the name finish gliding over before scrolling down
+      setTimeout(()=>scrollToEl(el,instant), changing&&!instant?520:0);
+      return;
+    }
+    setSide('none'); scrollToEl(null,true);
+  }
+  try{history.scrollRestoration='manual'}catch(e){}
+  document.body.classList.add('on-none');
+  route(true);
+  addEventListener('hashchange',()=>route(false));
+  // clicking a link to the section you're already on should still scroll there
+  document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+    const h=a.getAttribute('href');
+    if(h==='#home'){ e.preventDefault(); scrollToEl(null); return; }
+    if(h==='#'){ e.preventDefault(); history.pushState(null,'',location.pathname+location.search); route(false); return; }
+    if(h===location.hash){ e.preventDefault(); route(false); }
+  }));
+
+
+  // ---------- reading list drop-down ----------
+  const shelf=document.getElementById('shelf'), shelfTab=document.getElementById('shelf-tab');
+  function setShelf(open){
+    document.body.classList.toggle('shelf-open',open);
+    shelf.setAttribute('aria-hidden',!open); shelfTab.setAttribute('aria-expanded',open);
+    if(open) document.getElementById('shelf-close').focus();
+  }
+  shelfTab.addEventListener('click',()=>setShelf(true));
+  document.getElementById('shelf-close').addEventListener('click',()=>{setShelf(false);shelfTab.focus()});
+  document.getElementById('shelf-scrim').addEventListener('click',()=>setShelf(false));
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('shelf-open'))setShelf(false)});
+
+
+  // ---------- email: click copies the address instead of relying on a mail app ----------
+  (function(){
+    const link=document.getElementById('mail-link'), toast=document.getElementById('mail-toast'), addr='neil.talaviya@gmail.com';
+    let t;
+    function show(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(t); t=setTimeout(()=>toast.classList.remove('show'),2600); }
+    function fallbackCopy(){
+      try{ const ta=document.createElement('textarea'); ta.value=addr; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+        ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(e){ return false; }
+    }
+    link.addEventListener('click',e=>{
+      e.preventDefault();
+      const done=()=>show('copied '+addr), failed=()=>show(fallbackCopy()?'copied '+addr:addr);
+      try{ navigator.clipboard.writeText(addr).then(done,failed); }catch(err){ failed(); }
+    });
+  })();
+
+  /* =========================================================
+     PORTFOLIO COLLECTIONS — edit this list to add your work.
+     Each collection = a title + a list of photos.
+     For a photo, put the file path in src, e.g. "photos/lake-1.jpg".
+     Leave src empty ("") to show a placeholder.
+     ========================================================= */
+  const collections = [
+    { title:"legacies", note:"", photos:[
+        {src:"photos/legacies-v2-1.jpg", alt:"NCSSM street clock in front of a brick building"},
+        {src:"photos/legacies-v2-2.jpg", alt:"magnolia blossom, brick building and a 2020 marker"},
+        {src:"photos/legacies-v2-3.jpg", alt:"names carved into weathered wood, left half"},
+        {src:"photos/legacies-v2-4.jpg", alt:"names carved into weathered wood, right half"},
+        {src:"photos/legacies-v2-5.jpg", alt:"cupola on a campus building roof"}] },
+    { title:"the fourth", note:"", photos:[
+        {src:"photos/the-fourth-1.jpg", alt:"red, white and blue fireworks bursting together"},
+        {src:"photos/the-fourth-2.jpg", alt:"two-panel fireworks: a red and white burst above, rising trails below"},
+        {src:"photos/the-fourth-3.jpg", alt:"pink and green fireworks"},
+        {src:"photos/the-fourth-4.jpg", alt:"three-panel collage of fireworks"},
+        {src:"photos/the-fourth-5.jpg", alt:"black-and-white firework burst"}] },
+    { title:"banff flowers", note:"", photos:[
+        {src:"photos/banff-flowers-1.jpg", alt:"orange flower"},
+        {src:"photos/banff-flowers-2.jpg", alt:"white yarrow and yellow poppies"},
+        {src:"photos/banff-flowers-3.jpg", alt:"dahlia, stone building and blue delphiniums"},
+        {src:"photos/banff-flowers-4.jpg", alt:"near-black flowers"},
+        {src:"photos/banff-flowers-5.jpg", alt:"yellow and red flower, left half"},
+        {src:"photos/banff-flowers-6.jpg", alt:"yellow and red flower, right half"},
+        {src:"photos/banff-flowers-7.jpg", alt:"collage of red, white and blue flowers with a mountain"},
+        {src:"photos/banff-flowers-8.jpg", alt:"collage of white and yellow flowers and a mountain peak"},
+        {src:"photos/banff-flowers-9.jpg", alt:"orange lilies and poppies"},
+        {src:"photos/banff-flowers-10.jpg", alt:"red and pink flowers"},
+        {src:"photos/banff-flowers-11.jpg", alt:"black-and-white lily"}] },
+    { title:"almost antarctica", note:"", photos:[
+        {src:"photos/almost-antarctica-1.jpg", alt:"glacier ice"},
+        {src:"photos/almost-antarctica-2.jpg", alt:"Columbia Icefield sign"},
+        {src:"photos/almost-antarctica-3.jpg", alt:"mountain road, Ice Explorer bus and blue glacier ice"},
+        {src:"photos/almost-antarctica-4.jpg", alt:"collage of glacier ice and meltwater"},
+        {src:"photos/almost-antarctica-5.jpg", alt:"meltwater channel through glacier ice"},
+        {src:"photos/almost-antarctica-6.jpg", alt:"blue ice crevasse above a snowy mountain range"},
+        {src:"photos/almost-antarctica-7.jpg", alt:"black-and-white view of the glacier through a bus window"}] },
+    { title:"water falls", note:"", photos:[
+        {src:"photos/water-falls-1.jpg", alt:"turquoise river through a canyon"},
+        {src:"photos/water-falls-2.jpg", alt:"canyon waterfall into a turquoise pool, two-panel"},
+        {src:"photos/water-falls-3.jpg", alt:"turquoise river through a forest"},
+        {src:"photos/water-falls-4.jpg", alt:"collage of rushing falls"},
+        {src:"photos/water-falls-5.jpg", alt:"wide waterfall over rocks, left half"},
+        {src:"photos/water-falls-6.jpg", alt:"wide waterfall over rocks, right half"},
+        {src:"photos/water-falls-7.jpg", alt:"waterfall in a rock canyon"},
+        {src:"photos/water-falls-8.jpg", alt:"collage of tall falls and rapids"},
+        {src:"photos/water-falls-9.jpg", alt:"red chairs facing a tall waterfall"},
+        {src:"photos/water-falls-10.jpg", alt:"collage of canyon walls and falls"},
+        {src:"photos/water-falls-11.jpg", alt:"black-and-white waterfall"}] },
+    { title:"banff on film", note:"", photos:[
+        {src:"photos/banff-on-film-1.jpg", alt:"banff on film, photo 1"},
+        {src:"photos/banff-on-film-2.jpg", alt:"banff on film, photo 2"},
+        {src:"photos/banff-on-film-3.jpg", alt:"banff on film, photo 3"},
+        {src:"photos/banff-on-film-4.jpg", alt:"banff on film, photo 4"},
+        {src:"photos/banff-on-film-5.jpg", alt:"banff on film, photo 5"},
+        {src:"photos/banff-on-film-6.jpg", alt:"banff on film, photo 6"},
+        {src:"photos/banff-on-film-7.jpg", alt:"banff on film, photo 7"},
+        {src:"photos/banff-on-film-8.jpg", alt:"banff on film, photo 8"},
+        {src:"photos/banff-on-film-9.jpg", alt:"banff on film, photo 9"},
+        {src:"photos/banff-on-film-10.jpg", alt:"banff on film, photo 10"},
+        {src:"photos/banff-on-film-11.jpg", alt:"banff on film, photo 11"},
+        {src:"photos/banff-on-film-12.jpg", alt:"banff on film, photo 12"},
+        {src:"photos/banff-on-film-13.jpg", alt:"banff on film, photo 13"},
+        {src:"photos/banff-on-film-14.jpg", alt:"banff on film, photo 14"}] },
+    { title:"10-0 & 6-0", note:"", photos:[
+        {src:"photos/10-0-6-0-1.jpg", alt:"10-0 & 6-0, photo 1"},
+        {src:"photos/10-0-6-0-2.jpg", alt:"10-0 & 6-0, photo 2"},
+        {src:"photos/10-0-6-0-3.jpg", alt:"10-0 & 6-0, photo 3"},
+        {src:"photos/10-0-6-0-4.jpg", alt:"10-0 & 6-0, photo 4"},
+        {src:"photos/10-0-6-0-5.jpg", alt:"10-0 & 6-0, photo 5"},
+        {src:"photos/10-0-6-0-6.jpg", alt:"10-0 & 6-0, photo 6"},
+        {src:"photos/10-0-6-0-7.jpg", alt:"10-0 & 6-0, photo 7"},
+        {src:"photos/10-0-6-0-8.jpg", alt:"10-0 & 6-0, photo 8"},
+        {src:"photos/10-0-6-0-9.jpg", alt:"10-0 & 6-0, photo 9"},
+        {src:"photos/10-0-6-0-10.jpg", alt:"10-0 & 6-0, photo 10"},
+        {src:"photos/10-0-6-0-11.jpg", alt:"10-0 & 6-0, photo 11"},
+        {src:"photos/10-0-6-0-12.jpg", alt:"10-0 & 6-0, photo 12"},
+        {src:"photos/10-0-6-0-13.jpg", alt:"10-0 & 6-0, photo 13"},
+        {src:"photos/10-0-6-0-14.jpg", alt:"10-0 & 6-0, photo 14"},
+        {src:"photos/10-0-6-0-15.jpg", alt:"10-0 & 6-0, photo 15"},
+        {src:"photos/10-0-6-0-16.jpg", alt:"10-0 & 6-0, photo 16"},
+        {src:"photos/10-0-6-0-17.jpg", alt:"10-0 & 6-0, photo 17"},
+        {src:"photos/10-0-6-0-18.jpg", alt:"10-0 & 6-0, photo 18"},
+        {src:"photos/10-0-6-0-19.jpg", alt:"10-0 & 6-0, photo 19"}] },
+    { title:"koffeehaus september", note:"", photos:[
+        {src:"photos/koffeehaus-september-1.jpg", alt:"koffeehaus september, photo 1"},
+        {src:"photos/koffeehaus-september-2.jpg", alt:"koffeehaus september, photo 2"},
+        {src:"photos/koffeehaus-september-3.jpg", alt:"koffeehaus september, photo 3"},
+        {src:"photos/koffeehaus-september-4.jpg", alt:"koffeehaus september, photo 4"},
+        {src:"photos/koffeehaus-september-5.jpg", alt:"koffeehaus september, photo 5"},
+        {src:"photos/koffeehaus-september-6.jpg", alt:"koffeehaus september, photo 6"},
+        {src:"photos/koffeehaus-september-7.jpg", alt:"koffeehaus september, photo 7"},
+        {src:"photos/koffeehaus-september-8.jpg", alt:"koffeehaus september, photo 8"},
+        {src:"photos/koffeehaus-september-9.jpg", alt:"koffeehaus september, photo 9"},
+        {src:"photos/koffeehaus-september-10.jpg", alt:"koffeehaus september, photo 10"},
+        {src:"photos/koffeehaus-september-11.jpg", alt:"koffeehaus september, photo 11"},
+        {src:"photos/koffeehaus-september-12.jpg", alt:"koffeehaus september, photo 12"},
+        {src:"photos/koffeehaus-september-13.jpg", alt:"koffeehaus september, photo 13"},
+        {src:"photos/koffeehaus-september-14.jpg", alt:"koffeehaus september, photo 14"},
+        {src:"photos/koffeehaus-september-15.jpg", alt:"koffeehaus september, photo 15"},
+        {src:"photos/koffeehaus-september-16.jpg", alt:"koffeehaus september, photo 16"},
+        {src:"photos/koffeehaus-september-17.jpg", alt:"koffeehaus september, photo 17"},
+        {src:"photos/koffeehaus-september-18.jpg", alt:"koffeehaus september, photo 18"},
+        {src:"photos/koffeehaus-september-19.jpg", alt:"koffeehaus september, photo 19"},
+        {src:"photos/koffeehaus-september-20.jpg", alt:"koffeehaus september, photo 20"}] },
+    { title:"larp duke", note:"", photos:[
+        {src:"photos/larp-duke-1.jpg", alt:"larp duke, photo 1"},
+        {src:"photos/larp-duke-2.jpg", alt:"larp duke, photo 2"},
+        {src:"photos/larp-duke-3.jpg", alt:"larp duke, photo 3"},
+        {src:"photos/larp-duke-4.jpg", alt:"larp duke, photo 4"},
+        {src:"photos/larp-duke-5.jpg", alt:"larp duke, photo 5"},
+        {src:"photos/larp-duke-6.jpg", alt:"larp duke, photo 6"},
+        {src:"photos/larp-duke-7.jpg", alt:"larp duke, photo 7"},
+        {src:"photos/larp-duke-8.jpg", alt:"larp duke, photo 8"},
+        {src:"photos/larp-duke-9.jpg", alt:"larp duke, photo 9"}] },
+    { title:"mosaic", note:"", photos:[
+        {src:"photos/mosaic-1.jpg", alt:"mosaic, photo 1"},
+        {src:"photos/mosaic-2.jpg", alt:"mosaic, photo 2"},
+        {src:"photos/mosaic-3.jpg", alt:"mosaic, photo 3"},
+        {src:"photos/mosaic-4.jpg", alt:"mosaic, photo 4"},
+        {src:"photos/mosaic-5.jpg", alt:"mosaic, photo 5"},
+        {src:"photos/mosaic-6.jpg", alt:"mosaic, photo 6"},
+        {src:"photos/mosaic-7.jpg", alt:"mosaic, photo 7"},
+        {src:"photos/mosaic-8.jpg", alt:"mosaic, photo 8"},
+        {src:"photos/mosaic-9.jpg", alt:"mosaic, photo 9"},
+        {src:"photos/mosaic-10.jpg", alt:"mosaic, photo 10"},
+        {src:"photos/mosaic-11.jpg", alt:"mosaic, photo 11"},
+        {src:"photos/mosaic-12.jpg", alt:"mosaic, photo 12"},
+        {src:"photos/mosaic-13.jpg", alt:"mosaic, photo 13"},
+        {src:"photos/mosaic-14.jpg", alt:"mosaic, photo 14"},
+        {src:"photos/mosaic-15.jpg", alt:"mosaic, photo 15"},
+        {src:"photos/mosaic-16.jpg", alt:"mosaic, photo 16"},
+        {src:"photos/mosaic-17.jpg", alt:"mosaic, photo 17"}] },
+    { title:"friday night lights", note:"", photos:[
+        {src:"photos/friday-night-lights-1.jpg", alt:"friday night lights, photo 1"},
+        {src:"photos/friday-night-lights-2.jpg", alt:"friday night lights, photo 2"},
+        {src:"photos/friday-night-lights-3.jpg", alt:"friday night lights, photo 3"},
+        {src:"photos/friday-night-lights-4.jpg", alt:"friday night lights, photo 4"},
+        {src:"photos/friday-night-lights-5.jpg", alt:"friday night lights, photo 5"},
+        {src:"photos/friday-night-lights-6.jpg", alt:"friday night lights, photo 6"},
+        {src:"photos/friday-night-lights-7.jpg", alt:"friday night lights, photo 7"},
+        {src:"photos/friday-night-lights-8.jpg", alt:"friday night lights, photo 8"},
+        {src:"photos/friday-night-lights-9.jpg", alt:"friday night lights, photo 9"},
+        {src:"photos/friday-night-lights-10.jpg", alt:"friday night lights, photo 10"},
+        {src:"photos/friday-night-lights-11.jpg", alt:"friday night lights, photo 11"},
+        {src:"photos/friday-night-lights-12.jpg", alt:"friday night lights, photo 12"},
+        {src:"photos/friday-night-lights-13.jpg", alt:"friday night lights, photo 13"},
+        {src:"photos/friday-night-lights-14.jpg", alt:"friday night lights, photo 14"},
+        {src:"photos/friday-night-lights-15.jpg", alt:"friday night lights, photo 15"},
+        {src:"photos/friday-night-lights-16.jpg", alt:"friday night lights, photo 16"}] },
+  ];
+
+  // ---------- fast loading ----------
+  // grid + thumbnail strip use small copies in photos/t/ ; the zoomed view loads the full photo
+  const thumb=src=>src.replace('photos/','photos/t/');
+  const LQIP={"photos/legacies-v2-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCzqV5qTapdRWzYCMzAGQ8gVv8AhqWabTC9w+9/MPOe2BXMalpFzLqt1OIZD+/JX94uCp/HgV03hiGaHSyk8PlP5rHbuDccelK+po/hvc//2Q==", "photos/the-fourth-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwClqdtq93q+ovbX0yIlw4VBMRwPQZrpvAclw+hyfapZJJVuHUl2LEYA4rldY0bWW16/mtoDskmZlPmKMgn611vgeyurLRHjvE2SmdmxuB6gelPoNu70P//Z", "photos/banff-flowers-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwAukvbjVr/N7PHELhggRzjgmut0KBrawMb3Ek7ByS7nOenT2ri9U0/W01m8ktIz5Uk7sPnXkH6mur8KRXMWklbtCknmnALBsDAxyKxgpKTvsVJp2sj/2Q==", "photos/almost-antarctica-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDf1PULiK4Kg4j3Fc9hWjo87T2Zds53kc/hUV3ZSyu5RlGTnBUEGrWnQtBbbGAB3E8Gqb0JS1P/2Q==", "photos/water-falls-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwChrM+ojWtQSG7nAWY7UWQ8DPTrXYeEGuDpLC6eRpBKQd7EnoPWsfUtPuor26lgtWLSSswZZAM+/JrZ8JQ3cWlSC9TZK0zNjcDxgelT1C9z/9k=", "photos/banff-on-film-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwC9q8Nz9vmdL4pHvJ2mUritrw3n+zTmfzv3h+bzC/Yd65zU7S+bVrt105Z0aQlSzxjI/Guj8NRyxaYVmt1gfzD8q7cHgc8VjGFpXLurWP/Z", "photos/10-0-6-0-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCjrEt82uXpTUJY41mZQnnFQPwrrPBc0s+is8srSt5zDczE8YHrVW+0RJb+aX7IrFpC24kc5PvWt4c08adpvkKpUeYWwTn0qU1cZ//Z", "photos/koffeehaus-september-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCHX9Yni1m5gEtwsaueI3x0PNdV4VLnS3LXDTgysVdmySMCsvUPDk9zqk8hkIhlctkY3D2Ga3NCshYWLQqm0GRmAz9KBt3P/9k=", "photos/larp-duke-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDL8QX99Drd6sd5OqiZsASHAGegGa6/wPPNPobPPLJI3nMMuxJHA45rF1Hw+11rN5NcRTFGkJTynQd++TXR+FrKSy06WORCm6dmUEg8HGOlSnrYfQ//2Q==", "photos/mosaic-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDI1e6vT4i1Fft9zFCkzhVWRuo6ADNdf4Cnmn0F2uJpJXE7Dc7EnoPWs2/0O5l1K5kSySXfMW3O4HUnpg9OnWt/wxZz2mnyrPCsLyTtJtVgRzioTu7FtWVz/9k=", "photos/friday-night-lights-1.jpg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDK1u41T+3r9Yrq4SMTNtAlIGM9q7DwNLPLobNcTPK/nsNzNuOMCob7TDJfTuLGN9zk7iRz+tbGh25trEoYFh+cnauMdueKzjV5ny2ZTVkf/9k="};   // tiny blurred previews of each cover photo, shown instantly
+  const warmed=new Set();
+  function warm(src){ if(!src||warmed.has(src)) return; warmed.add(src); const im=new Image(); im.decoding='async'; im.src=src; }
+
+  function photoEl(c,i,full){
+    const ph=c.photos[i];
+    if(ph.src){
+      const im=document.createElement('img');
+      im.src=full?ph.src:thumb(ph.src); im.alt=ph.alt||c.title;
+      im.width=full?1080:540; im.height=full?1350:675; im.decoding='async';
+      if(!full) im.onerror=()=>{im.onerror=null; im.src=ph.src};  // no small copy yet? use the full photo
+      return im;
+    }
+    const d=document.createElement('div');d.className='ph';d.textContent=c.title+' · '+(i+1);return d;
+  }
+
+  // grid tiles, each with its own back/next
+  const ig=document.getElementById('ig');
+  const pos=collections.map(()=>0);
+  collections.forEach((c,ci)=>{
+    const t=document.createElement('div');t.className='tile';t.tabIndex=0;t.setAttribute('aria-label','open '+c.title);
+    t.innerHTML='<span class="stack"></span><span class="label"></span>'+
+      '<button class="arrow l" aria-label="previous photo"><svg viewBox="0 0 16 46"><path d="M14 2 L2 23 L14 44"/></svg></button><button class="arrow r" aria-label="next photo"><svg viewBox="0 0 16 46"><path d="M2 2 L14 23 L2 44"/></svg></button>';
+    t.querySelector('.label').textContent=c.title;
+    if(c.photos[0]&&LQIP[c.photos[0].src]) t.style.backgroundImage='url('+LQIP[c.photos[0].src]+')';
+    const l=t.querySelector('.arrow.l'), r=t.querySelector('.arrow.r');
+    function draw(){
+      const i=pos[ci];
+      const old=t.querySelector('img,.ph'); if(old) old.remove();
+      t.prepend(photoEl(c,i,false));
+      t.querySelector('.stack').textContent=(i+1)+'/'+c.photos.length;
+      l.hidden=i===0; r.hidden=i===c.photos.length-1;
+      // get the neighbours ready so the next tap is instant
+      [i+1,i+2,i-1].forEach(k=>{const p=c.photos[k]; if(p&&p.src) warm(thumb(p.src))});
+    }
+    t._draw=draw;
+    l.addEventListener('click',e=>{e.stopPropagation();pos[ci]=Math.max(0,pos[ci]-1);draw()});
+    r.addEventListener('click',e=>{e.stopPropagation();pos[ci]=Math.min(c.photos.length-1,pos[ci]+1);draw()});
+    t.addEventListener('click',()=>openLB(ci,pos[ci]));
+    t.addEventListener('keydown',e=>{if(e.key==='Enter')openLB(ci,pos[ci])});
+    // hovering a tile = likely to open it: start fetching its full-size photo
+    t.addEventListener('pointerenter',()=>{const p=c.photos[pos[ci]]; if(p&&p.src) warm(p.src)});
+    if(c.photos.length<2){l.hidden=r.hidden=true}
+    ig.appendChild(t); draw();
+  });
+
+  // once the page is idle, quietly fetch the rest of the grid photos in the background
+  (function idleWarm(){
+    const queue=[]; const max=Math.max(...collections.map(c=>c.photos.length));
+    for(let k=0;k<max;k++) collections.forEach(c=>{const p=c.photos[k]; if(p&&p.src) queue.push(thumb(p.src))});
+    const slow=navigator.connection&&(navigator.connection.saveData||/2g/.test(navigator.connection.effectiveType||''));
+    if(slow) return;
+    const ric=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>10}),200));
+    function run(){ let n=0; while(queue.length&&n<4){warm(queue.shift());n++} if(queue.length) ric(run); }
+    addEventListener('load',()=>setTimeout(()=>ric(run),300));
+  })();
+
+  // zoomed view
+  const lb=document.getElementById('lb'), lbImg=document.getElementById('lb-img'), thumbs=document.getElementById('lb-thumbs');
+  let cur=0, idx=0;
+  function openLB(ci,i){cur=ci;idx=i;lb.classList.add('open');renderLB();document.getElementById('lb-close').focus()}
+  function closeLB(){lb.classList.remove('open');pos[cur]=idx;ig.children[cur]._draw();ig.children[cur].focus()}
+  function renderLB(){
+    const c=collections[cur];
+    document.getElementById('lb-title').textContent=c.title;
+    document.getElementById('lb-sub').textContent=(c.note?c.note+' · ':'')+'photo '+(idx+1)+' of '+c.photos.length+'  ·  collection '+(cur+1)+' of '+collections.length;
+    lbImg.innerHTML='';
+    const p=c.photos[idx];
+    if(p.src){
+      lbImg.style.backgroundImage='url('+thumb(p.src)+')';
+      const im=photoEl(c,idx,true); im.style.visibility='hidden';
+      const show=()=>{im.style.visibility='visible'};
+      if(im.complete) show(); else im.addEventListener('load',show,{once:true});
+      lbImg.appendChild(im);
+    } else { lbImg.style.backgroundImage='none'; lbImg.appendChild(photoEl(c,idx,true)); }
+    // next / previous full-size photos (across collections too)
+    const nb=[[cur,idx+1],[cur,idx-1],[cur,idx+2]];
+    if(idx===c.photos.length-1&&collections[cur+1]) nb.push([cur+1,0]);
+    if(idx===0&&collections[cur-1]) nb.push([cur-1,collections[cur-1].photos.length-1]);
+    nb.forEach(([a,b])=>{const q=collections[a]&&collections[a].photos[b]; if(q&&q.src) warm(q.src)});
+    thumbs.innerHTML='';
+    c.photos.forEach((ph2,k)=>{const p=ph2;const b=document.createElement('button');b.className=k===idx?'on':'';b.setAttribute('aria-label','photo '+(k+1));
+      if(p.src){const im=document.createElement('img');im.src=thumb(p.src);im.alt='';im.loading='lazy';im.decoding='async';b.appendChild(im)}else{const sp=document.createElement('span');sp.textContent=k+1;b.appendChild(sp)}
+      b.addEventListener('click',()=>{idx=k;renderLB()});thumbs.appendChild(b)});
+    // arrows run through every photo, then on into the next / previous collection
+    document.getElementById('lb-prev').hidden = cur===0 && idx===0;
+    document.getElementById('lb-next').hidden = cur===collections.length-1 && idx===c.photos.length-1;
+    document.getElementById('lb-pc').style.visibility = cur===0?'hidden':'visible';
+    document.getElementById('lb-nc').style.visibility = cur===collections.length-1?'hidden':'visible';
+  }
+  function step(d){
+    const c=collections[cur];
+    if(d>0){ if(idx<c.photos.length-1) idx++; else if(cur<collections.length-1){cur++;idx=0} }
+    else   { if(idx>0) idx--; else if(cur>0){cur--;idx=collections[cur].photos.length-1} }
+    renderLB();
+  }
+  function jump(d){const n=cur+d;if(n<0||n>=collections.length)return;cur=n;idx=0;renderLB()}
+  document.getElementById('lb-prev').addEventListener('click',()=>step(-1));
+  document.getElementById('lb-next').addEventListener('click',()=>step(1));
+  document.getElementById('lb-pc').addEventListener('click',()=>jump(-1));
+  document.getElementById('lb-nc').addEventListener('click',()=>jump(1));
+  document.getElementById('lb-close').addEventListener('click',closeLB);
+  lb.addEventListener('click',e=>{if(e.target===lb||e.target.classList.contains('lb-stage'))closeLB()});
+  addEventListener('keydown',e=>{
+    if(!lb.classList.contains('open'))return;
+    if(e.key==='Escape')closeLB();
+    if(e.key==='ArrowRight')step(1);
+    if(e.key==='ArrowLeft')step(-1);
+  });
+
+  // films: only one plays at a time
+  document.querySelectorAll('.film video').forEach(v=>v.addEventListener('play',()=>{
+    document.querySelectorAll('.film video').forEach(o=>{if(o!==v&&!o.paused)o.pause()});
+  }));
+
+  // carousels (events)
+  document.querySelectorAll('.carousel').forEach(c=>{
+    const track=c.querySelector('.track'), slides=[...track.children];
+    const prev=c.querySelector('.prev'), next=c.querySelector('.next'), count=c.querySelector('.count');
+    const step=()=>slides[1]?slides[1].offsetLeft-slides[0].offsetLeft:track.clientWidth;
+    function update(){
+      const st=step();
+      if(!(st>0)){ count.textContent=''; return; }   // hidden (other side showing): wait until it's visible
+      const i=Math.round(track.scrollLeft/st);
+      const shown=Math.max(1,Math.round(track.clientWidth/st));
+      const last=Math.min(i+shown,slides.length);
+      count.textContent=(last>i+1?(i+1)+'–'+last:(i+1))+' of '+slides.length;
+      prev.hidden=track.scrollLeft<=2;
+      next.hidden=track.scrollLeft+track.clientWidth>=track.scrollWidth-2;
+    }
+    prev.addEventListener('click',()=>track.scrollBy({left:-step()}));
+    next.addEventListener('click',()=>track.scrollBy({left:step()}));
+    track.addEventListener('scroll',()=>requestAnimationFrame(update),{passive:true});
+    addEventListener('resize',update); update();
+    // recount as soon as the carousel becomes visible (e.g. after picking the lens side)
+    if('ResizeObserver' in window) new ResizeObserver(update).observe(track);
+  });
+</script>
+</body>
+</html>
